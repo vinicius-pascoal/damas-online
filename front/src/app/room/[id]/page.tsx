@@ -1,10 +1,11 @@
 'use client'
 
 import { useParams, useRouter } from 'next/navigation'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import axios from 'axios'
 import * as Ably from 'ably'
 import CheckersBoard from '@/components/CheckersBoard'
+import { getClientId } from '@/lib/clientId'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
 const ABLY_KEY = process.env.NEXT_PUBLIC_ABLY_KEY || ''
@@ -33,6 +34,7 @@ export default function RoomPage() {
   const [error, setError] = useState('')
   const [copied, setCopied] = useState(false)
   const [channel, setChannel] = useState<Ably.Types.RealtimeChannelCallbacks | null>(null)
+  const hasJoinedRef = useRef(false)
 
   const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/room/${roomId}` : ''
 
@@ -42,25 +44,33 @@ export default function RoomPage() {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const joinRoom = useCallback(async () => {
-    try {
-      const response = await axios.post(`${API_URL}/api/rooms/${roomId}/join`)
-      const { room: updatedRoom, playerId: newPlayerId, playerColor: color } = response.data
-
-      setRoom(updatedRoom)
-      setPlayerId(newPlayerId)
-      setPlayerColor(color)
-      setLoading(false)
-    } catch (error: any) {
-      console.error('Erro ao entrar na sala:', error)
-      setError(error.response?.data?.error || 'Erro ao entrar na sala')
-      setLoading(false)
-    }
-  }, [roomId])
-
   useEffect(() => {
+    const joinRoom = async () => {
+      if (hasJoinedRef.current) return
+
+      // Obtém clientId persistente
+      const clientId = getClientId()
+
+      hasJoinedRef.current = true
+
+      try {
+        const response = await axios.post(`${API_URL}/api/rooms/${roomId}/join`, { clientId })
+        const { room: updatedRoom, playerId: newPlayerId, playerColor: color } = response.data
+
+        setRoom(updatedRoom)
+        setPlayerId(newPlayerId)
+        setPlayerColor(color)
+        setLoading(false)
+      } catch (error: any) {
+        console.error('Erro ao entrar na sala:', error)
+        setError(error.response?.data?.error || 'Erro ao entrar na sala')
+        setLoading(false)
+        hasJoinedRef.current = false // Reset em caso de erro
+      }
+    }
+
     joinRoom()
-  }, [joinRoom])
+  }, [roomId])
 
   useEffect(() => {
     if (!ABLY_KEY || !roomId) return

@@ -64,14 +64,43 @@ app.post('/api/rooms', (req, res) => {
 // Entrar em uma sala
 app.post('/api/rooms/:roomId/join', (req, res) => {
   const { roomId } = req.params
+  const { clientId } = req.body || {}
+  const userAgent = req.headers['user-agent'] || 'unknown'
+  const ip = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').toString()
   const room = rooms.get(roomId)
 
   if (!room) {
     return res.status(404).json({ error: 'Sala não encontrada' })
   }
 
+  // Idempotência: se já existe player com o mesmo clientId, retorna sem adicionar novamente
+  if (clientId) {
+    const existingPlayer = room.players.find(p => p.clientId === clientId)
+    if (existingPlayer) {
+      // Se já tem 2 jogadores, mantém status playing
+      rooms.set(roomId, room)
+      const channel = ably.channels.get(`room:${roomId}`)
+      channel.publish('room-update', room)
+      return res.json({ room, playerId: existingPlayer.id, playerColor: existingPlayer.color })
+    }
+  }
+
   if (room.players.length >= 2) {
     return res.status(400).json({ error: 'Sala cheia' })
+  }
+
+  // Guard: evita segundo join imediato do mesmo cliente (IP/UA) em dev/strict mode
+  if (room.players.length === 1) {
+    const first = room.players[0]
+    // Se o segundo join vier do mesmo IP/UA em janela de 2s, tratar como idempotente
+    const twoSeconds = 2000
+    const now = Date.now()
+    const firstJoinTime = new Date(first.joinedAt).getTime()
+    if (first.ip === ip && first.userAgent === userAgent && (now - firstJoinTime) < twoSeconds) {
+      const channel = ably.channels.get(`room:${roomId}`)
+      channel.publish('room-update', room)
+      return res.json({ room, playerId: first.id, playerColor: first.color })
+    }
   }
 
   const playerId = uuidv4()
@@ -81,6 +110,9 @@ app.post('/api/rooms/:roomId/join', (req, res) => {
     id: playerId,
     color: playerColor,
     joinedAt: new Date(),
+    clientId: clientId || undefined,
+    ip,
+    userAgent,
   }
 
   room.players.push(player)
@@ -96,7 +128,7 @@ app.post('/api/rooms/:roomId/join', (req, res) => {
   const channel = ably.channels.get(`room:${roomId}`)
   channel.publish('room-update', room)
 
-  console.log(`Jogador ${playerId} (${playerColor}) entrou na sala ${roomId}`)
+  console.log(`Jogador ${playerId} (${playerColor}) entrou na sala ${roomId} clientId=${clientId || 'none'} ip=${ip} ua=${userAgent}`)
 
   res.json({ room, playerId, playerColor })
 })
