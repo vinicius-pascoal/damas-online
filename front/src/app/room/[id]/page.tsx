@@ -20,6 +20,8 @@ interface Room {
   players: Player[]
   currentTurn: 'red' | 'black'
   status: 'waiting' | 'playing' | 'finished'
+  winner?: 'red' | 'black'
+  endReason?: string
 }
 
 export default function RoomPage() {
@@ -35,6 +37,7 @@ export default function RoomPage() {
   const [copied, setCopied] = useState(false)
   const [channel, setChannel] = useState<Ably.Types.RealtimeChannelCallbacks | null>(null)
   const hasJoinedRef = useRef(false)
+  const [showGameEndModal, setShowGameEndModal] = useState(false)
 
   const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/room/${roomId}` : ''
 
@@ -70,7 +73,17 @@ export default function RoomPage() {
     }
 
     joinRoom()
-  }, [roomId])
+
+    // Cleanup: avisar servidor quando sair
+    return () => {
+      if (hasJoinedRef.current && playerId) {
+        // Usar navigator.sendBeacon para garantir envio mesmo ao fechar aba
+        const data = JSON.stringify({ playerId })
+        const blob = new Blob([data], { type: 'application/json' })
+        navigator.sendBeacon(`${API_URL}/api/rooms/${roomId}/leave`, blob)
+      }
+    }
+  }, [roomId, playerId])
 
   useEffect(() => {
     if (!ABLY_KEY || !roomId) return
@@ -79,11 +92,21 @@ export default function RoomPage() {
     const newChannel = ably.channels.get(`room:${roomId}`)
 
     newChannel.subscribe('room-update', (message) => {
-      setRoom(message.data)
+      const updatedRoom = message.data
+      setRoom(updatedRoom)
+
+      // Mostrar modal quando o jogo terminar
+      if (updatedRoom.status === 'finished' && !showGameEndModal) {
+        setShowGameEndModal(true)
+      }
     })
 
     newChannel.subscribe('game-move', (message) => {
       // O componente CheckersBoard irá lidar com os movimentos
+    })
+
+    newChannel.subscribe('player-left', (message) => {
+      // Mostrar modal será acionado pelo room-update
     })
 
     setChannel(newChannel)
@@ -92,7 +115,17 @@ export default function RoomPage() {
       newChannel.unsubscribe()
       ably.close()
     }
-  }, [roomId])
+  }, [roomId, playerId, showGameEndModal])
+
+  const handlePlayAgain = async () => {
+    try {
+      const response = await axios.post(`${API_URL}/api/rooms`)
+      const newRoomId = response.data.room.id
+      router.push(`/room/${newRoomId}`)
+    } catch (error) {
+      console.error('Erro ao criar nova sala:', error)
+    }
+  }
 
   const handleMove = async (from: { row: number; col: number }, to: { row: number; col: number }) => {
     try {
@@ -134,23 +167,23 @@ export default function RoomPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 p-4">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-6 flex justify-between items-center">
+        <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <button
             onClick={() => router.push('/')}
-            className="bg-white/10 hover:bg-white/20 text-white font-bold py-2 px-4 rounded-lg backdrop-blur-sm"
+            className="bg-white/10 hover:bg-white/20 text-white font-bold py-2 px-4 rounded-lg backdrop-blur-sm text-sm sm:text-base"
           >
             ← Voltar
           </button>
 
           {room?.status === 'waiting' && (
-            <div className="bg-white/10 backdrop-blur-lg rounded-lg p-4 flex items-center gap-3">
-              <span className="text-white">Compartilhe este link:</span>
-              <code className="bg-black/30 px-3 py-1 rounded text-sm text-blue-300">
+            <div className="bg-white/10 backdrop-blur-lg rounded-lg p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
+              <span className="text-white text-sm sm:text-base">Compartilhe este link:</span>
+              <code className="bg-black/30 px-2 sm:px-3 py-1 rounded text-xs sm:text-sm text-blue-300 break-all">
                 {shareUrl}
               </code>
               <button
                 onClick={copyShareLink}
-                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded transition-colors"
+                className="bg-blue-500 hover:bg-blue-600 text-white px-3 sm:px-4 py-1 rounded transition-colors text-sm sm:text-base w-full sm:w-auto"
               >
                 {copied ? '✓ Copiado!' : 'Copiar'}
               </button>
@@ -158,8 +191,8 @@ export default function RoomPage() {
           )}
         </div>
 
-        <div className="grid md:grid-cols-[1fr,auto] gap-6 items-start">
-          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 shadow-2xl">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr,auto] gap-4 sm:gap-6 items-start">
+          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-3 sm:p-6 shadow-2xl">
             {room?.status === 'waiting' ? (
               <div className="text-center py-20">
                 <div className="text-6xl mb-4">⏳</div>
@@ -185,8 +218,8 @@ export default function RoomPage() {
             )}
           </div>
 
-          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 shadow-2xl w-full md:w-80">
-            <h3 className="text-xl font-bold text-white mb-4">Informações da Sala</h3>
+          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 sm:p-6 shadow-2xl w-full lg:w-80">
+            <h3 className="text-lg sm:text-xl font-bold text-white mb-3 sm:mb-4">Informações da Sala</h3>
 
             <div className="space-y-3">
               <div className="bg-black/20 rounded-lg p-3">
@@ -230,6 +263,78 @@ export default function RoomPage() {
           </div>
         </div>
       </div>
+
+      {/* Modal de Vitória/Derrota */}
+      {showGameEndModal && room?.status === 'finished' && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[9999] animate-fadeIn p-4">
+          <div className="bg-gradient-to-br from-purple-900 to-indigo-900 rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-2xl max-w-md w-full transform animate-scaleIn relative">
+            {/* Confetes animados */}
+            {room.winner === playerColor && (
+              <div className="absolute inset-0 overflow-hidden pointer-events-none rounded-3xl">
+                {[...Array(20)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="absolute w-2 h-2 bg-yellow-400 rounded-full animate-confetti"
+                    style={{
+                      left: `${Math.random() * 100}%`,
+                      top: '-10%',
+                      animationDelay: `${Math.random() * 2}s`,
+                      animationDuration: `${2 + Math.random() * 2}s`,
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+
+            <div className="text-center relative z-10">
+              {/* Ícone animado */}
+              <div className="text-6xl sm:text-8xl mb-3 sm:mb-4 animate-bounce">
+                {room.winner === playerColor ? '🏆' : '😢'}
+              </div>
+
+              {/* Título */}
+              <h2 className={`text-3xl sm:text-4xl font-bold mb-2 ${room.winner === playerColor ? 'text-yellow-400' : 'text-red-400'
+                }`}>
+                {room.winner === playerColor ? 'Vitória!' : 'Derrota'}
+              </h2>
+
+              {/* Mensagem */}
+              <p className="text-white text-base sm:text-lg mb-4 sm:mb-6">
+                {room.endReason === 'player_left'
+                  ? 'O oponente saiu da partida'
+                  : room.winner === playerColor
+                    ? 'Parabéns! Você venceu a partida!'
+                    : 'Não foi dessa vez, mas você jogou bem!'
+                }
+              </p>
+
+              {/* Informação do vencedor */}
+              <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 mb-6">
+                <div className="text-gray-300 text-sm mb-1">Vencedor</div>
+                <div className="text-white font-bold text-xl">
+                  {room.winner === 'red' ? '🔴 Vermelho' : '⚫ Preto'}
+                </div>
+              </div>
+
+              {/* Botões */}
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                <button
+                  onClick={() => router.push('/')}
+                  className="flex-1 bg-white/10 hover:bg-white/20 text-white font-bold py-2 sm:py-3 px-4 sm:px-6 rounded-xl transition-all duration-200 hover:scale-105 text-sm sm:text-base"
+                >
+                  🏠 Lobby
+                </button>
+                <button
+                  onClick={handlePlayAgain}
+                  className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-2 sm:py-3 px-4 sm:px-6 rounded-xl transition-all duration-200 hover:scale-105 shadow-lg text-sm sm:text-base"
+                >
+                  🎮 Jogar Novamente
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

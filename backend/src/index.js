@@ -133,6 +133,56 @@ app.post('/api/rooms/:roomId/join', (req, res) => {
   res.json({ room, playerId, playerColor })
 })
 
+// Sair de uma sala
+app.post('/api/rooms/:roomId/leave', (req, res) => {
+  const { roomId } = req.params
+  const { playerId } = req.body
+
+  const room = rooms.get(roomId)
+
+  if (!room) {
+    return res.status(404).json({ error: 'Sala não encontrada' })
+  }
+
+  const playerIndex = room.players.findIndex(p => p.id === playerId)
+
+  if (playerIndex === -1) {
+    return res.status(404).json({ error: 'Jogador não encontrado na sala' })
+  }
+
+  const leavingPlayer = room.players[playerIndex]
+
+  // Se a partida estava em andamento, o outro jogador vence
+  if (room.status === 'playing' && room.players.length === 2) {
+    const otherPlayer = room.players.find(p => p.id !== playerId)
+    room.status = 'finished'
+    room.winner = otherPlayer?.color || null
+    room.endReason = 'player_left'
+
+    console.log(`Jogador ${playerId} (${leavingPlayer.color}) saiu da sala ${roomId} - Partida encerrada`)
+  } else {
+    console.log(`Jogador ${playerId} (${leavingPlayer.color}) saiu da sala ${roomId}`)
+  }
+
+  // Remove o jogador da sala
+  room.players.splice(playerIndex, 1)
+
+  // Se não sobrou ninguém, pode deletar a sala (opcional)
+  if (room.players.length === 0) {
+    rooms.delete(roomId)
+    console.log(`Sala ${roomId} removida (sem jogadores)`)
+  } else {
+    rooms.set(roomId, room)
+  }
+
+  // Notificar via Ably
+  const channel = ably.channels.get(`room:${roomId}`)
+  channel.publish('room-update', room)
+  channel.publish('player-left', { playerId, playerColor: leavingPlayer.color })
+
+  res.json({ success: true, room })
+})
+
 // Fazer movimento
 app.post('/api/rooms/:roomId/move', (req, res) => {
   const { roomId } = req.params
@@ -203,6 +253,21 @@ app.post('/api/rooms/:roomId/move', (req, res) => {
   console.log(`Movimento na sala ${roomId}: ${from.row},${from.col} -> ${to.row},${to.col}`)
 
   res.json({ room })
+})
+
+// Listar todas as salas
+app.get('/api/rooms', (req, res) => {
+  const roomsList = Array.from(rooms.values()).map(room => ({
+    id: room.id,
+    players: room.players.length,
+    status: room.status,
+    createdAt: room.createdAt,
+  }))
+
+  // Ordenar por data de criação (mais recentes primeiro)
+  roomsList.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+
+  res.json({ rooms: roomsList })
 })
 
 // Obter informações da sala

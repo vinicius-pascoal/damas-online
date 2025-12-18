@@ -183,8 +183,8 @@ const CheckersBoard: React.FC<CheckersBoardProps> = ({
 
   return (
     <div className="flex flex-col items-center">
-      <div className="mb-4 text-center">
-        <div className="text-white text-xl font-bold mb-2">
+      <div className="mb-2 sm:mb-4 text-center">
+        <div className="text-white text-base sm:text-xl font-bold mb-1 sm:mb-2">
           {currentTurn === playerColor ? (
             <span className="text-green-400">✨ Seu turno!</span>
           ) : (
@@ -193,7 +193,7 @@ const CheckersBoard: React.FC<CheckersBoardProps> = ({
         </div>
       </div>
 
-      <div className="inline-block bg-amber-900 p-4 rounded-xl shadow-2xl">
+      <div className="inline-block bg-amber-900 p-2 sm:p-4 rounded-xl shadow-2xl">
         <div className="grid grid-cols-8 gap-0 border-4 border-amber-950">
           {Array.from({ length: 8 }).map((_, row) =>
             Array.from({ length: 8 }).map((_, col) => {
@@ -207,18 +207,18 @@ const CheckersBoard: React.FC<CheckersBoardProps> = ({
                   key={`${row}-${col}`}
                   onClick={() => handleSquareClick(row, col)}
                   className={`
-                    w-12 h-12 md:w-16 md:h-16 flex items-center justify-center cursor-pointer
+                    w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 flex items-center justify-center cursor-pointer
                     transition-all duration-200
                     ${isLight ? 'bg-amber-200' : 'bg-amber-800'}
-                    ${isSelected ? 'ring-4 ring-yellow-400 ring-inset' : ''}
-                    ${isValidMove ? 'ring-4 ring-green-400 ring-inset' : ''}
+                    ${isSelected ? 'ring-2 sm:ring-4 ring-yellow-400 ring-inset' : ''}
+                    ${isValidMove ? 'ring-2 sm:ring-4 ring-green-400 ring-inset' : ''}
                     ${currentTurn === playerColor && piece?.color === playerColor ? 'hover:opacity-80' : ''}
                   `}
                 >
                   {piece && (
                     <div
                       className={`
-                        w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center
+                        w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center
                         shadow-lg transform transition-transform hover:scale-110
                         ${piece.color === 'red'
                           ? 'bg-gradient-to-br from-red-500 to-red-700 border-2 border-red-900'
@@ -227,12 +227,12 @@ const CheckersBoard: React.FC<CheckersBoardProps> = ({
                       `}
                     >
                       {piece.type === 'king' && (
-                        <span className="text-2xl">👑</span>
+                        <span className="text-lg sm:text-2xl">👑</span>
                       )}
                     </div>
                   )}
                   {isValidMove && !piece && (
-                    <div className="w-4 h-4 bg-green-400 rounded-full opacity-75"></div>
+                    <div className="w-3 h-3 sm:w-4 sm:h-4 bg-green-400 rounded-full opacity-75"></div>
                   )}
                 </div>
               )
@@ -241,7 +241,7 @@ const CheckersBoard: React.FC<CheckersBoardProps> = ({
         </div>
       </div>
 
-      <div className="mt-4 text-gray-300 text-sm text-center">
+      <div className="mt-2 sm:mt-4 text-gray-300 text-xs sm:text-sm text-center">
         <p>Você está jogando como {playerColor === 'red' ? '🔴 Vermelho' : '⚫ Preto'}</p>
       </div>
     </div>
