@@ -1,0 +1,189 @@
+
+   ____                                ___        ___            
+  / __ \____ _____ ___  ____ ______   / _ \____  / (_)___  ___  
+ / / / / __ `/ __ `__ \/ __ `/ ___/  / // / __ \/ / / __ \/ _ \ 
+/ /_/ / /_/ / / / / / / /_/ (__  )  / // / / / / / / / / /  __/ 
+\____/\__,_/_/ /_/ /_/\__,_/____/  /____/_/ /_/_/_/_/ /_/\___/  
+                                                                 
+========================================================================
+                JOGO DE DAMAS ONLINE - MULTIPLAYER 1V1
+========================================================================
+
+🎮 PROJETO COMPLETO E FUNCIONAL
+✅ Frontend: Next.js 14 + TypeScript + Tailwind CSS
+✅ Backend: Node.js + Express + Ably WebSocket
+✅ Docker: Hot reload em desenvolvimento
+✅ Documentação: 8 arquivos completos
+
+========================================================================
+                         INÍCIO RÁPIDO (5 MIN)
+========================================================================
+
+1. CONFIGURAR ABLY (2 min)
+   → https://ably.com/signup
+   → Copie sua API Key
+
+2. CONFIGURAR .ENV (1 min)
+   → cp .env.example .env
+   → Cole sua API Key no .env
+
+3. INICIAR PROJETO (1 min)
+   → docker-compose up --build
+
+4. JOGAR! (agora!)
+   → http://localhost:3000
+
+========================================================================
+                         ESTRUTURA DO PROJETO
+========================================================================
+
+damas-online/
+│
+├── 📚 DOCUMENTAÇÃO (8 arquivos)
+│   ├── README.md           → Visão geral
+│   ├── QUICKSTART.md       → Início em 5 min
+│   ├── INSTALL.md          → Guia completo
+│   ├── TECHNICAL.md        → Arquitetura
+│   ├── REGRAS.md           → Como jogar
+│   ├── COMMANDS.md         → Comandos úteis
+│   ├── API_EXAMPLES.md     → Exemplos de API
+│   └── PROJETO.md          → Resumo completo
+│
+├── 🎨 FRONTEND (Next.js + Tailwind)
+│   ├── src/app/
+│   │   ├── page.tsx              → Lobby
+│   │   └── room/[id]/page.tsx    → Sala de jogo
+│   └── src/components/
+│       └── CheckersBoard.tsx     → Tabuleiro
+│
+├── ⚙️ BACKEND (Node.js + Express)
+│   └── src/
+│       └── index.js              → API + WebSocket
+│
+└── 🐳 DOCKER
+    ├── docker-compose.yml        → Orquestração
+    ├── front/Dockerfile          → Container frontend
+    └── backend/Dockerfile        → Container backend
+
+========================================================================
+                         FUNCIONALIDADES
+========================================================================
+
+✨ LOBBY
+   → Criar sala com botão
+   → Entrar em sala por ID
+   → Interface moderna com gradiente
+
+🎮 JOGO
+   → Tabuleiro 8x8 interativo
+   → 12 peças por jogador
+   → Movimentos diagonais
+   → Capturas (pular peças)
+   → Promoção a Dama 👑
+   → Sistema de turnos
+   → Indicadores visuais
+
+🔄 TEMPO REAL
+   → WebSocket via Ably
+   → Sincronização automática
+   → Atualizações instantâneas
+
+🔗 SALAS PRIVADAS
+   → ID único por sala
+   → Link compartilhável
+   → Máximo 2 jogadores
+
+========================================================================
+                         TECNOLOGIAS
+========================================================================
+
+Frontend               Backend                DevOps
+────────               ───────                ──────
+Next.js 14            Node.js 20             Docker
+React 18              Express.js             Docker Compose
+TypeScript            Ably WebSocket         Hot Reload
+Tailwind CSS          UUID                   
+Ably Client           CORS                   
+Axios                 dotenv                 
+
+========================================================================
+                         COMANDOS ESSENCIAIS
+========================================================================
+
+INICIAR
+  docker-compose up --build
+
+VER LOGS
+  docker-compose logs -f
+
+PARAR
+  docker-compose down
+
+REBUILD
+  docker-compose up --build --force-recreate
+
+ENTRAR NO CONTAINER
+  docker-compose exec frontend sh
+  docker-compose exec backend sh
+
+========================================================================
+                         ENDPOINTS API
+========================================================================
+
+POST   /api/rooms                → Criar sala
+POST   /api/rooms/:id/join       → Entrar na sala
+POST   /api/rooms/:id/move       → Fazer movimento
+GET    /api/rooms/:id            → Info da sala
+GET    /health                   → Health check
+
+Base URL: http://localhost:4000
+
+========================================================================
+                         EVENTOS WEBSOCKET
+========================================================================
+
+Channel: room:{roomId}
+
+• room-update    → Jogador entrou, status mudou
+• game-move      → Movimento realizado
+
+========================================================================
+                         PRÓXIMOS PASSOS
+========================================================================
+
+1. ⚡ QUICKSTART.md     → Começar em 5 minutos
+2. 📖 REGRAS.md         → Aprender a jogar
+3. 🛠️ INSTALL.md        → Instalação detalhada
+4. 💻 TECHNICAL.md      → Entender arquitetura
+5. 🧪 API_EXAMPLES.md   → Testar API
+
+========================================================================
+                         MELHORIAS FUTURAS
+========================================================================
+
+Funcionalidades         Técnico
+───────────────         ───────
+□ Capturas múltiplas   □ PostgreSQL
+□ Timer de turno       □ Redis cache
+□ Chat                 □ Auth JWT
+□ Histórico            □ Testes
+□ Replay               □ CI/CD
+□ Ranking              □ Monitoramento
+
+========================================================================
+                         SUPORTE
+========================================================================
+
+📧 Issues: https://github.com/seu-usuario/damas-online/issues
+📚 Docs: Veja arquivos .md na raiz do projeto
+💬 Dúvidas: Abra uma issue no GitHub
+
+========================================================================
+                         BOA SORTE! 🎮
+========================================================================
+
+Desenvolvido com ❤️ usando Next.js, Node.js e Ably
+
+⭐ Se gostou, deixe uma estrela no GitHub!
+
+========================================================================

@@ -1,0 +1,33 @@
+{
+  "name": "damas-online",
+  "version": "1.0.0",
+  "description": "Jogo de damas online multiplayer com salas privadas e WebSocket",
+  "private": true,
+  "scripts": {
+    "dev": "docker-compose up",
+    "build": "docker-compose up --build",
+    "down": "docker-compose down",
+    "logs": "docker-compose logs -f",
+    "logs:front": "docker-compose logs -f frontend",
+    "logs:back": "docker-compose logs -f backend",
+    "clean": "docker-compose down -v",
+    "restart": "docker-compose restart",
+    "ps": "docker-compose ps"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vinicius-pascoal/damas-online.git"
+  },
+  "keywords": [
+    "checkers",
+    "game",
+    "multiplayer",
+    "websocket",
+    "nextjs",
+    "nodejs",
+    "ably",
+    "docker"
+  ],
+  "author": "",
+  "license": "MIT"
+}
