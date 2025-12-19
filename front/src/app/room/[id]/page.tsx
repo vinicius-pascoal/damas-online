@@ -6,6 +6,7 @@ import axios from 'axios'
 import * as Ably from 'ably'
 import CheckersBoard from '@/components/CheckersBoard'
 import { getClientId } from '@/lib/clientId'
+import { getNickname } from '@/lib/nickname'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
 const ABLY_KEY = process.env.NEXT_PUBLIC_ABLY_KEY || ''
@@ -13,6 +14,7 @@ const ABLY_KEY = process.env.NEXT_PUBLIC_ABLY_KEY || ''
 interface Player {
   id: string
   color: 'red' | 'black'
+  nickname?: string
 }
 
 interface Room {
@@ -32,6 +34,7 @@ export default function RoomPage() {
   const [room, setRoom] = useState<Room | null>(null)
   const [playerId, setPlayerId] = useState<string>('')
   const [playerColor, setPlayerColor] = useState<'red' | 'black' | null>(null)
+  const [playerNickname, setPlayerNickname] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [copied, setCopied] = useState(false)
@@ -53,16 +56,18 @@ export default function RoomPage() {
 
       // Obtém clientId persistente
       const clientId = getClientId()
+      const nickname = getNickname() || 'Anônimo'
 
       hasJoinedRef.current = true
 
       try {
-        const response = await axios.post(`${API_URL}/api/rooms/${roomId}/join`, { clientId })
+        const response = await axios.post(`${API_URL}/api/rooms/${roomId}/join`, { clientId, nickname })
         const { room: updatedRoom, playerId: newPlayerId, playerColor: color } = response.data
 
         setRoom(updatedRoom)
         setPlayerId(newPlayerId)
         setPlayerColor(color)
+        setPlayerNickname(nickname)
         setLoading(false)
       } catch (error: any) {
         console.error('Erro ao entrar na sala:', error)
@@ -199,8 +204,11 @@ export default function RoomPage() {
                 <h2 className="text-3xl font-bold text-white mb-2">
                   Aguardando Jogador...
                 </h2>
-                <p className="text-gray-300">
-                  Você é o jogador {playerColor === 'red' ? '🔴 Vermelho' : '⚫ Preto'}
+                <p className="text-gray-300 mb-2">
+                  Você é <span className="font-bold">{playerNickname}</span>
+                </p>
+                <p className="text-gray-400 text-sm">
+                  {playerColor === 'red' ? '🔴 Vermelho' : '⚫ Preto'}
                 </p>
                 <p className="text-gray-400 mt-4">
                   Compartilhe o link acima para convidar alguém!
@@ -254,9 +262,17 @@ export default function RoomPage() {
               )}
 
               <div className="bg-black/20 rounded-lg p-3">
-                <div className="text-gray-400 text-sm">Jogadores</div>
-                <div className="text-white">
-                  {room?.players.length || 0} / 2
+                <div className="text-gray-400 text-sm mb-2">Jogadores ({room?.players.length || 0}/2)</div>
+                <div className="space-y-1">
+                  {room?.players.map((player) => (
+                    <div key={player.id} className="flex items-center gap-2">
+                      <span>{player.color === 'red' ? '🔴' : '⚫'}</span>
+                      <span className="text-white text-sm font-medium">
+                        {player.nickname || 'Anônimo'}
+                        {player.color === playerColor && ' (Você)'}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -312,7 +328,10 @@ export default function RoomPage() {
               <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 mb-6">
                 <div className="text-gray-300 text-sm mb-1">Vencedor</div>
                 <div className="text-white font-bold text-xl">
-                  {room.winner === 'red' ? '🔴 Vermelho' : '⚫ Preto'}
+                  {room.winner === 'red' ? '🔴' : '⚫'} {room.players.find(p => p.color === room.winner)?.nickname || 'Anônimo'}
+                </div>
+                <div className="text-gray-400 text-sm mt-1">
+                  {room.winner === 'red' ? 'Vermelho' : 'Preto'}
                 </div>
               </div>
 

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import axios from 'axios'
+import { getNickname, setNickname } from '@/lib/nickname'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
 
@@ -17,6 +18,8 @@ export default function Home() {
   const [loading, setLoading] = useState(false)
   const [rooms, setRooms] = useState<RoomItem[]>([])
   const [loadingRooms, setLoadingRooms] = useState(true)
+  const [nickname, setNicknameState] = useState('')
+  const [showNicknameInput, setShowNicknameInput] = useState(false)
   const router = useRouter()
 
   const fetchRooms = async () => {
@@ -36,6 +39,20 @@ export default function Home() {
     const interval = setInterval(fetchRooms, 3000)
     return () => clearInterval(interval)
   }, [])
+
+  useEffect(() => {
+    const savedNickname = getNickname()
+    if (savedNickname) {
+      setNicknameState(savedNickname)
+    }
+  }, [])
+
+  const handleSaveNickname = () => {
+    if (nickname.trim()) {
+      setNickname(nickname.trim())
+      setShowNicknameInput(false)
+    }
+  }
 
   const createRoom = async () => {
     try {
@@ -98,6 +115,44 @@ export default function Home() {
         </div>
 
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 sm:p-8 shadow-2xl space-y-4 sm:space-y-6">
+          {/* Seção de Nickname */}
+          <div className="bg-white/5 rounded-xl p-3 sm:p-4 border border-white/10">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-white font-semibold text-sm sm:text-base">👤 Seu Nick:</span>
+                <span className="text-blue-300 font-bold text-sm sm:text-base">
+                  {nickname || 'Anônimo'}
+                </span>
+              </div>
+              <button
+                onClick={() => setShowNicknameInput(!showNicknameInput)}
+                className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-lg text-xs sm:text-sm transition-colors"
+              >
+                {showNicknameInput ? 'Cancelar' : 'Alterar'}
+              </button>
+            </div>
+            {showNicknameInput && (
+              <div className="flex gap-2 mt-3">
+                <input
+                  type="text"
+                  value={nickname}
+                  onChange={(e) => setNicknameState(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSaveNickname()}
+                  placeholder="Digite seu nickname..."
+                  maxLength={20}
+                  className="flex-1 bg-black/30 text-white px-3 py-2 rounded-lg border border-white/20 focus:border-blue-400 focus:outline-none text-sm sm:text-base"
+                  autoFocus
+                />
+                <button
+                  onClick={handleSaveNickname}
+                  className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-bold text-sm sm:text-base transition-colors"
+                >
+                  Salvar
+                </button>
+              </div>
+            )}
+          </div>
+
           <div>
             <button
               onClick={createRoom}

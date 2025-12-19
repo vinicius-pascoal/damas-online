@@ -64,7 +64,7 @@ app.post('/api/rooms', (req, res) => {
 // Entrar em uma sala
 app.post('/api/rooms/:roomId/join', (req, res) => {
   const { roomId } = req.params
-  const { clientId } = req.body || {}
+  const { clientId, nickname } = req.body || {}
   const userAgent = req.headers['user-agent'] || 'unknown'
   const ip = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').toString()
   const room = rooms.get(roomId)
@@ -109,6 +109,7 @@ app.post('/api/rooms/:roomId/join', (req, res) => {
   const player = {
     id: playerId,
     color: playerColor,
+    nickname: nickname || 'Anônimo',
     joinedAt: new Date(),
     clientId: clientId || undefined,
     ip,
