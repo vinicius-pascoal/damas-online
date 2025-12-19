@@ -186,10 +186,6 @@ Contribuições são bem-vindas!
 
 MIT - Veja o arquivo LICENSE para detalhes
 
-## 👨‍💻 Autor
-
-Desenvolvido com ❤️ usando Next.js, Node.js e Ably
-
 ---
 
 ⭐ Se gostou do projeto, deixe uma estrela!
