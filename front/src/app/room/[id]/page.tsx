@@ -4,6 +4,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useState, useRef } from 'react'
 import axios from 'axios'
 import * as Ably from 'ably'
+import { QRCodeSVG } from 'qrcode.react'
 import CheckersBoard from '@/components/CheckersBoard'
 import { getClientId } from '@/lib/clientId'
 import { getNickname } from '@/lib/nickname'
@@ -172,58 +173,25 @@ export default function RoomPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 p-4">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div className="mb-4 sm:mb-6">
           <button
             onClick={() => router.push('/')}
             className="bg-white/10 hover:bg-white/20 text-white font-bold py-2 px-4 rounded-lg backdrop-blur-sm text-sm sm:text-base"
           >
             ← Voltar
           </button>
-
-          {room?.status === 'waiting' && (
-            <div className="bg-white/10 backdrop-blur-lg rounded-lg p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
-              <span className="text-white text-sm sm:text-base">Compartilhe este link:</span>
-              <code className="bg-black/30 px-2 sm:px-3 py-1 rounded text-xs sm:text-sm text-blue-300 break-all">
-                {shareUrl}
-              </code>
-              <button
-                onClick={copyShareLink}
-                className="bg-blue-500 hover:bg-blue-600 text-white px-3 sm:px-4 py-1 rounded transition-colors text-sm sm:text-base w-full sm:w-auto"
-              >
-                {copied ? '✓ Copiado!' : 'Copiar'}
-              </button>
-            </div>
-          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr,auto] gap-4 sm:gap-6 items-start">
           <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-3 sm:p-6 shadow-2xl">
-            {room?.status === 'waiting' ? (
-              <div className="text-center py-20">
-                <div className="text-6xl mb-4">⏳</div>
-                <h2 className="text-3xl font-bold text-white mb-2">
-                  Aguardando Jogador...
-                </h2>
-                <p className="text-gray-300 mb-2">
-                  Você é <span className="font-bold">{playerNickname}</span>
-                </p>
-                <p className="text-gray-400 text-sm">
-                  {playerColor === 'red' ? '🔴 Vermelho' : '⚫ Preto'}
-                </p>
-                <p className="text-gray-400 mt-4">
-                  Compartilhe o link acima para convidar alguém!
-                </p>
-              </div>
-            ) : (
-              <CheckersBoard
-                roomId={roomId}
-                playerId={playerId}
-                playerColor={playerColor}
-                currentTurn={room?.currentTurn || 'red'}
-                onMove={handleMove}
-                channel={channel}
-              />
-            )}
+            <CheckersBoard
+              roomId={roomId}
+              playerId={playerId}
+              playerColor={playerColor}
+              currentTurn={room?.currentTurn || 'red'}
+              onMove={handleMove}
+              channel={channel}
+            />
           </div>
 
           <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 sm:p-6 shadow-2xl w-full lg:w-80">
@@ -279,7 +247,69 @@ export default function RoomPage() {
           </div>
         </div>
       </div>
+      {/* Modal de Aguardando Jogador com QR Code */}
+      {room?.status === 'waiting' && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[9999] p-4">
+          <div className="bg-gradient-to-br from-indigo-900 to-purple-900 rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-2xl max-w-lg w-full transform animate-scaleIn">
+            <div className="text-center">
+              {/* Ícone */}
+              <div className="text-6xl sm:text-7xl mb-4 animate-pulse">
+                ⏳
+              </div>
 
+              {/* Título */}
+              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+                Aguardando Jogador...
+              </h2>
+
+              {/* Info do jogador */}
+              <div className="bg-white/10 backdrop-blur-lg rounded-xl p-3 mb-6">
+                <p className="text-gray-300 text-sm sm:text-base">
+                  Você é <span className="font-bold text-white">{playerNickname}</span>
+                </p>
+                <p className="text-gray-400 text-xs sm:text-sm mt-1">
+                  {playerColor === 'red' ? '🔴 Vermelho' : '⚫ Preto'}
+                </p>
+              </div>
+
+              {/* QR Code */}
+              <div className="bg-white p-4 sm:p-6 rounded-2xl mb-6 inline-block">
+                <QRCodeSVG
+                  value={shareUrl}
+                  size={180}
+                  level="H"
+                  includeMargin={true}
+                />
+              </div>
+
+              {/* Instruções */}
+              <p className="text-gray-300 text-sm sm:text-base mb-4">
+                Escaneie o QR Code ou compartilhe o link abaixo:
+              </p>
+
+              {/* Link compartilhável */}
+              <div className="bg-black/30 rounded-lg p-3 sm:p-4 mb-4">
+                <code className="text-blue-300 text-xs sm:text-sm break-all">
+                  {shareUrl}
+                </code>
+              </div>
+
+              {/* Botão copiar */}
+              <button
+                onClick={copyShareLink}
+                className="w-full bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white font-bold py-3 px-6 rounded-xl transition-all duration-200 hover:scale-105 shadow-lg text-sm sm:text-base"
+              >
+                {copied ? '✓ Link Copiado!' : '🔗 Copiar Link'}
+              </button>
+
+              {/* Mensagem adicional */}
+              <p className="text-gray-400 text-xs sm:text-sm mt-4">
+                A partida iniciará automaticamente quando o segundo jogador entrar
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Modal de Vitória/Derrota */}
       {showGameEndModal && room?.status === 'finished' && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[9999] animate-fadeIn p-4">
